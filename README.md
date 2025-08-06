@@ -192,8 +192,6 @@ BASE_ID=appXXXXXX
 OPENAI_API_KEY=sk-xxx
 ```
 
-No hard-coded keys.
-
 ---
 
 ## 🔧 Customizing Criteria
