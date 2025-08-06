@@ -209,25 +209,3 @@ To adjust LLM behavior:
 * Swap `openai.ChatCompletion` with another LLM provider
 
 ---
-
-## 📤 Deliverables Checklist
-
-* [x] Airtable Base with all tables & links
-* [x] 3 Forms with prefilled URLs
-* [x] Compression + Decompression Scripts
-* [x] Shortlisting Logic Script
-* [x] LLM Review Script with retry/backoff
-* [x] All API keys handled via `.env`
-* [x] This final documentation (Markdown/Google Doc)
-
----
-
-## 🚫 No Emojis Used
-
-As required, no emojis appear in table names, field names, or documentation.
-
----
-
-## 📎 Airtable Base (Share Link)
-
-Provide your actual base share link here → `<INSERT HERE>`
