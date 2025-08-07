@@ -34,7 +34,7 @@ This project involves building an **Airtable-based data model** and automation s
 | LinkedIn   | URL                           |
 | Applicant  | Link to Applicants (required) |
 
-### 3. **Work Experience** (1\:N Child)
+### 3. **Work Experience** (1:N Child)
 
 | Field Name   | Type                                |
 | ------------ | ----------------------------------- |
@@ -78,48 +78,39 @@ Since Airtable doesn’t support multi-table forms, we simulate it using three f
 ### 2. **Work Experience Form**
 
 * Prefills `Applicant` using `RECORD_ID()` from first form
-* URL format:
-
-  ```
-  ```
-
-[https://airtable.com/form\_id?prefill\_Applicant=recXXXXXXXXX](https://airtable.com/form_id?prefill_Applicant=recXXXXXXXXX)
-
-````
+* URL format: `https://airtable.com/form_id?prefill_Applicant=recXXXXXXXXX`
 
 ### 3. **Salary Preferences Form**
-- Same prefill technique as Work Experience
+* Same prefill technique as Work Experience
 
 ---
 
 ## 🧠 JSON Compression Script (`compress_json.py`)
 
 ### Description:
-- Fetches child-table data (Personal, Experience, Salary)
-- Builds nested JSON per applicant
-- Writes JSON to `Compressed JSON` field in `Applicants`
+* Fetches child-table data (Personal, Experience, Salary)
+* Builds nested JSON per applicant
+* Writes JSON to `Compressed JSON` field in `Applicants`
 
 ### Sample JSON Output:
 ```json
 {
-"personal": {"name": "Jane Doe", "location": "NYC"},
-"experience": [
-  {"company": "Google", "title": "SWE"},
-  {"company": "Meta", "title": "Engineer"}
-],
-"salary": {"rate": 100, "currency": "USD", "availability": 25}
+  "personal": {"name": "Jane Doe", "location": "NYC"},
+  "experience": [
+    {"company": "Google", "title": "SWE"},
+    {"company": "Meta", "title": "Engineer"}
+  ],
+  "salary": {"rate": 100, "currency": "USD", "availability": 25}
 }
-````
+```
 
 ---
 
 ## 🔄 JSON Decompression Script (`decompress_json.py`)
 
 ### Description:
-
 * Parses compressed JSON from `Applicants`
 * Clears and upserts records to:
-
   * `Personal Details`
   * `Work Experience`
   * `Salary Preferences`
@@ -130,15 +121,12 @@ Since Airtable doesn’t support multi-table forms, we simulate it using three f
 ## 🏆 Shortlist Automation Script (`shortlist_leads.py`)
 
 ### Rules:
-
 * ✅ Experience: ≥ 4 years OR Tier-1 company (Google, Meta, etc.)
 * ✅ Compensation: ≤ 100 USD/hour AND ≥ 20 hrs/week
 * ✅ Location: US, Canada, UK, Germany, or India
 
 ### Action:
-
 If all criteria pass:
-
 * Add record to `Shortlisted Leads`
 * Copy `Compressed JSON`
 * Write a readable `Score Reason`
@@ -149,11 +137,9 @@ If all criteria pass:
 ## 🤖 LLM Evaluation Script (`llm_review.py`)
 
 ### Trigger:
-
 * Runs after `Compressed JSON` is added or updated
 
 ### Prompt:
-
 ```
 You are a recruiting analyst. Given this applicant JSON, do four things:
 1. Provide a concise 75-word summary.
@@ -169,13 +155,11 @@ Follow-Ups: <bullet list>
 ```
 
 ### Output Fields:
-
 * `LLM Summary` (e.g. "SWE with 5 yrs at Google + Meta")
 * `LLM Score` (1–10)
 * `LLM Follow-Ups` (bulleted list)
 
 ### Validation:
-
 * API key read from `.env`
 * Exponential backoff on failure (3x max)
 * No repeat calls if `LLM Summary` already exists
@@ -185,25 +169,47 @@ Follow-Ups: <bullet list>
 ## 🔐 Authentication & Secrets
 
 All keys are read via environment variables from `.env`:
-
 ```env
-AIRTABLE_API_KEY=xxx
-BASE_ID=appXXXXXX
-OPENAI_API_KEY=sk-xxx
+AIRTABLE_API_KEY=your_airtable_token
+BASE_ID=your_airtable_base_id
+OPENAI_API_KEY=your_openai_key
 ```
 
 ---
 
-## 🔧 Customizing Criteria
+## 📦 Project Setup
 
-To adjust shortlisting logic:
+### Install dependencies:
+```bash
+pip install -r requirements.txt
+```
 
-* Edit `TIER1_COMPANIES` or `VALID_LOCATIONS` in `shortlist_leads.py`
-* Modify experience or compensation thresholds as needed
-
-To adjust LLM behavior:
-
-* Tweak prompt in `build_prompt()`
-* Swap `openai.ChatCompletion` with another LLM provider
+### Run each script:
+```bash
+python compress_json.py
+python decompress_json.py
+python shortlist_leads.py
+python llm_review.py
+```
 
 ---
+
+## 📄 requirements.txt
+
+```txt
+pyairtable==1.3.1
+openai==1.14.3
+python-dotenv==1.0.1
+```
+
+---
+
+## 🔧 Customizing Logic
+
+To adjust shortlisting logic:
+* Edit `TIER1_COMPANIES` or `VALID_LOCATIONS` in `shortlist_leads.py`
+* Change experience or rate thresholds
+
+To customize LLM behavior:
+* Edit the prompt in `build_prompt()`
+* Replace OpenAI with another LLM provider if needed
