@@ -54,10 +54,13 @@ Applicant JSON:
 
 def update_llm_fields(record_id, response_text):
     try:
-        summary = response_text.split("Summary:")[1].split("Score:")[0].strip()
-        score = int(response_text.split("Score:")[1].split("Issues:")[0].strip())
-        issues = response_text.split("Issues:")[1].split("Follow-Ups:")[0].strip()
+        # Try parsing LLM response with fallback safety
+        summary = extract_between(response_text, "Summary:", "Score:").strip()
+        score_str = extract_between(response_text, "Score:", "Issues:").strip()
+        issues = extract_between(response_text, "Issues:", "Follow-Ups:").strip()
         followups = response_text.split("Follow-Ups:")[1].strip()
+
+        score = int(score_str)
 
         applicants_tbl.update(record_id, {
             "LLM Summary": summary,
@@ -68,35 +71,51 @@ def update_llm_fields(record_id, response_text):
     except Exception as e:
         print(f"❌ Failed to parse or update LLM response for {record_id}: {e}")
 
+def extract_between(text, start, end):
+    """Utility function to safely extract between two markers"""
+    try:
+        return text.split(start)[1].split(end)[0]
+    except Exception:
+        return ""
+
 def main():
-    applicants = applicants_tbl.all()
+    try:
+        applicants = applicants_tbl.all()
+    except Exception as e:
+        print(f"❌ Error loading applicants: {e}")
+        return
+
     for rec in applicants:
-        record_id = rec["id"]
-        fields = rec.get("fields", {})
-        json_blob = fields.get("Compressed JSON", "")
-        existing_summary = fields.get("LLM Summary")
-
-        if not json_blob:
-            print(f"⏭️ No JSON for {record_id}")
-            continue
-
-        if existing_summary:  # avoid redundant API calls
-            print(f"ℹ️ Skipping {record_id}: LLM already filled.")
-            continue
-
         try:
-            data = json.loads(json_blob)
-        except json.JSONDecodeError:
-            print(f"❌ Invalid JSON for {record_id}")
-            continue
+            record_id = rec["id"]
+            fields = rec.get("fields", {})
+            json_blob = fields.get("Compressed JSON", "")
+            existing_summary = fields.get("LLM Summary")
 
-        prompt = build_prompt(data)
-        result = call_llm_with_retry(prompt)
+            if not json_blob:
+                print(f"⏭️ No JSON for {record_id}")
+                continue
 
-        if result:
-            update_llm_fields(record_id, result)
-        else:
-            print(f"❌ Skipped {record_id}: LLM failed after retries.")
+            if existing_summary:
+                print(f"ℹ️ Skipping {record_id}: LLM already filled.")
+                continue
+
+            try:
+                data = json.loads(json_blob)
+            except json.JSONDecodeError:
+                print(f"❌ Invalid JSON for {record_id}")
+                continue
+
+            prompt = build_prompt(data)
+            result = call_llm_with_retry(prompt)
+
+            if result:
+                update_llm_fields(record_id, result)
+            else:
+                print(f"❌ Skipped {record_id}: LLM failed after retries.")
+
+        except Exception as e:
+            print(f"❌ Unexpected error processing record {rec.get('id', 'unknown')}: {e}")
 
 if __name__ == "__main__":
     main()
